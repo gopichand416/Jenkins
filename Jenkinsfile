@@ -1,68 +1,37 @@
 pipeline {
-agent any
+    agent any
 
-options {
-    buildDiscarder(logRotator(daysToKeepStr: '10', numToKeepStr: '10'))
-    timeout(time: 12, unit: 'HOURS')
-    timestamps()
-}
-
-triggers {
-    cron '@midnight'
-}
-stages {
-    stage('Requirements') {
-        steps {
-            
-            bat 'python --version'
-            pause
-            bat 'python3 -m venv venv'
-            bat 'venv\\Scripts\\pip install --upgrade --requirement requirements.txt'
-            
-        }
-    }
-    stage('Lint') {
-        steps {
-            
-            bat 'venv\\Scripts\\flake8 --ignore=E501,E231 *.py'
-            bat 'venv\\Scripts\\pylint --errors-only --disable=C0301 --disable=C0326 *.py'
-            
-        }
-    }
-    stage('Test') {
-        steps {
-            
-            bat('''
-                venv\\Scripts\\coverage run -m pytest -v test_*.py ^
-                    --junitxml=pytest_junit.xml
-            ''')
-            
-        }
-    }
-    stage('Build') {
-        steps {
-            echo "Build the application in this step..."
-        }
-    }
-    stage('Deploy') {
-        steps {
-            echo "Deploy the application in this step..."
-        }
-    }
-}
-
-post {
-    always {
-        {
-            bat 'venv\\Scripts\\coverage.xml'
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/your_username/your_project.git'
+            }
         }
 
-        junit allowEmptyResults: true, testResults: '**/pytest_junit.xml'
+        stage('Install dependencies') {
+            steps {
+                bat 'python -m venv venv'
+                bat 'source venv/bin/activate && pip install -r requirements.txt'
+            }
+        }
 
-        junit allowEmptyResults: true, testResults: '**/pylint_junit.xml'
-
-        publishCoverage adapters: [cobertura('**/coverage.xml')],
-            sourceFileResolver: sourceFiles('STORE_LAST_BUILD')
+        stage('Run tests') {
+            steps {
+                bat 'source venv/bin/activate && pytest --junitxml=test-results.xml'
+            }
+        }
     }
-}
+
+    post {
+        always {
+            junit allowEmptyResults: true, testResults: 'test-results.xml'
+
+            script {
+                def coverageResult = bat(script: 'source venv/bin/activate && coverage run -m pytest', returnStdout: true)
+                writeFile file: 'coverage.xml', text: coverageResult
+            }
+
+            cobertura autoUpdateHealth: false, autoUpdateStability: false, coverageReportFile: 'coverage.xml'
+        }
+    }
 }
