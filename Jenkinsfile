@@ -31,7 +31,7 @@ pipeline {
                 writeFile file: 'coverage.xml', text: coverageResult
             }
 
-            cobertura coberturaReportFile: 'coverage.xml'
+            publishCoverage adapters: [coberturaAdapter('coverage.xml')]
         }
     }
 }
