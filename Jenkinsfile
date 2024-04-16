@@ -14,7 +14,7 @@ stages {
     stage('Requirements') {
         steps {
             
-            bat 'python -m venv venv'
+            bat 'python3 -m venv venv'
             bat 'venv\\Scripts\\pip install --upgrade --requirement requirements.txt'
             
         }
@@ -51,7 +51,7 @@ stages {
 
 post {
     always {
-        dir("${env.WORKSPACE}/Ch05/05_02-publish-reports"){
+        {
             bat 'venv\\Scripts\\coverage xml'
         }
 
