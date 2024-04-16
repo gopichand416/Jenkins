@@ -31,7 +31,7 @@ pipeline {
                 writeFile file: 'coverage.xml', text: coverageResult
             }
 
-            cobertura autoUpdateHealth: false, autoUpdateStability: false, coverageReportFile: 'coverage.xml'
+            cobertura coberturaReportFile: 'coverage.xml'
         }
     }
 }
