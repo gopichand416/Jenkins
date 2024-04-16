@@ -14,6 +14,8 @@ stages {
     stage('Requirements') {
         steps {
             
+            bat 'python --version'
+            pause
             bat 'python3 -m venv venv'
             bat 'venv\\Scripts\\pip install --upgrade --requirement requirements.txt'
             
