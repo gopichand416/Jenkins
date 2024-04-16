@@ -14,7 +14,7 @@ triggers {
 stages {
     stage('Requirements') {
         steps {
-            dir("${env.WORKSPACE}/Ch05/05_02-publish-reports"){
+            {
                 bat 'python -m venv venv'
                 bat 'venv\\Scripts\\pip install --upgrade --requirement requirements.txt'
             }
@@ -22,7 +22,7 @@ stages {
     }
     stage('Lint') {
         steps {
-            dir("${env.WORKSPACE}/Ch05/05_02-publish-reports"){
+            {
                 bat 'venv\\Scripts\\flake8 --ignore=E501,E231 *.py'
                 bat 'venv\\Scripts\\pylint --errors-only --disable=C0301 --disable=C0326 *.py'
             }
@@ -30,7 +30,7 @@ stages {
     }
     stage('Test') {
         steps {
-            dir("${env.WORKSPACE}/Ch05/05_02-publish-reports"){
+            {
                 bat('''
                     venv\\Scripts\\coverage run -m pytest -v test_*.py ^
                         --junitxml=pytest_junit.xml
