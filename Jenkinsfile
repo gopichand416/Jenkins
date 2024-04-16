@@ -10,32 +10,31 @@ options {
 triggers {
     cron '@midnight'
 }
-
 stages {
     stage('Requirements') {
         steps {
-            {
-                bat 'python -m venv venv'
-                bat 'venv\\Scripts\\pip install --upgrade --requirement requirements.txt'
-            }
+            
+            bat 'python -m venv venv'
+            bat 'venv\\Scripts\\pip install --upgrade --requirement requirements.txt'
+            
         }
     }
     stage('Lint') {
         steps {
-            {
-                bat 'venv\\Scripts\\flake8 --ignore=E501,E231 *.py'
-                bat 'venv\\Scripts\\pylint --errors-only --disable=C0301 --disable=C0326 *.py'
-            }
+            
+            bat 'venv\\Scripts\\flake8 --ignore=E501,E231 *.py'
+            bat 'venv\\Scripts\\pylint --errors-only --disable=C0301 --disable=C0326 *.py'
+            
         }
     }
     stage('Test') {
         steps {
-            {
-                bat('''
-                    venv\\Scripts\\coverage run -m pytest -v test_*.py ^
-                        --junitxml=pytest_junit.xml
-                ''')
-            }
+            
+            bat('''
+                venv\\Scripts\\coverage run -m pytest -v test_*.py ^
+                    --junitxml=pytest_junit.xml
+            ''')
+            
         }
     }
     stage('Build') {
