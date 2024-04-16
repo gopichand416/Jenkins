@@ -1,61 +1,67 @@
 pipeline {
-    agent any
+agent any
 
-    // this section configures Jenkins options
-    options {
+options {
+    buildDiscarder(logRotator(daysToKeepStr: '10', numToKeepStr: '10'))
+    timeout(time: 12, unit: 'HOURS')
+    timestamps()
+}
 
-        // only keep 10 logs for no more than 10 days
-        buildDiscarder(logRotator(daysToKeepStr: '10', numToKeepStr: '10'))
+triggers {
+    cron '@midnight'
+}
 
-        // cause the build to time out if it runs for more than 12 hours
-        timeout(time: 12, unit: 'HOURS')
-
-        // add timestamps to the log
-        timestamps()
-    }
-
-    // this section configures triggers
-    triggers {
-          // create a cron trigger that will run the job every day at midnight
-          // note that the time is based on the time zone used by the server
-          // where Jenkins is running, not the user's time zone
-          cron '@midnight'
-    }
-
-    // the pipeline section we all know and love: stages! :D
-    stages {
-        stage('Requirements') {
-            steps {
-                echo 'Installing requirements...'
-            }
-        }
-        stage('Build') {
-            steps {
-                echo 'Building..'
-            }
-        }
-        stage('Test') {
-            steps {
-                echo 'Testing..'
-            }
-        }
-        stage('Report') {
-            steps {
-                echo 'Reporting....'
+stages {
+    stage('Requirements') {
+        steps {
+            dir("${env.WORKSPACE}/Ch05/05_02-publish-reports"){
+                bat 'python -m venv venv'
+                bat 'venv\\Scripts\\pip install --upgrade --requirement requirements.txt'
             }
         }
     }
-
-    // the post section is a special collection of stages
-    // that are run after all other stages have completed
-    post {
-
-        // the always stage will always be run
-        always {
-
-            // the always stage can contain build steps like other stages
-            // a "steps{...}" section is not needed.
-            echo "This step will run after all other steps have finished.  It will always run, even in the status of the build is not SUCCESS"
+    stage('Lint') {
+        steps {
+            dir("${env.WORKSPACE}/Ch05/05_02-publish-reports"){
+                bat 'venv\\Scripts\\flake8 --ignore=E501,E231 *.py'
+                bat 'venv\\Scripts\\pylint --errors-only --disable=C0301 --disable=C0326 *.py'
+            }
         }
     }
+    stage('Test') {
+        steps {
+            dir("${env.WORKSPACE}/Ch05/05_02-publish-reports"){
+                bat('''
+                    venv\\Scripts\\coverage run -m pytest -v test_*.py ^
+                        --junitxml=pytest_junit.xml
+                ''')
+            }
+        }
+    }
+    stage('Build') {
+        steps {
+            echo "Build the application in this step..."
+        }
+    }
+    stage('Deploy') {
+        steps {
+            echo "Deploy the application in this step..."
+        }
+    }
+}
+
+post {
+    always {
+        dir("${env.WORKSPACE}/Ch05/05_02-publish-reports"){
+            bat 'venv\\Scripts\\coverage xml'
+        }
+
+        junit allowEmptyResults: true, testResults: '**/pytest_junit.xml'
+
+        junit allowEmptyResults: true, testResults: '**/pylint_junit.xml'
+
+        publishCoverage adapters: [cobertura('**/coverage.xml')],
+            sourceFileResolver: sourceFiles('STORE_LAST_BUILD')
+    }
+}
 }
